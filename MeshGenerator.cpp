@@ -7,12 +7,12 @@ using namespace DirectX;
 
 Mesh MeshGenerator::GenerateTriangle(XMFLOAT3 v1, XMFLOAT3 v2, XMFLOAT3 v3, std::string name)
 {
-    return Mesh();
+	return Mesh();
 }
 
 Mesh MeshGenerator::GenerateUnitCircle(std::string name)
 {
-    return Mesh();
+	return Mesh();
 }
 
 Mesh MeshGenerator::GenerateUnitBox(std::string name)
@@ -79,4 +79,73 @@ Mesh MeshGenerator::GenerateUnitBox(std::string name)
 	boxMesh.DrawArgs[boxMesh.Name] = submesh;
 
 	return boxMesh;
+}
+
+Mesh MeshGenerator::GenerateGrid(std::string name, int width, int length)
+{
+	Mesh gridMesh = Mesh();
+
+	// Compute grid vertices
+	for (int row = 1; row < width + 1; row++) {
+		for (int col = 1; col < length + 1; col++) {
+			auto color = col * row % 2 == 0 ? XMFLOAT4(Colors::Black) : XMFLOAT4(Colors::White);
+			Vertex vertex = Vertex(
+				XMFLOAT3(-width / 2 + row, -1.0f, -length / 2 + col),
+				color,
+				XMFLOAT3(), // Normal
+				XMFLOAT3(), // Tangent
+				XMFLOAT2()  // Tex Coord
+			);
+			gridMesh.Vertices.push_back(vertex);
+		}
+	}
+
+	// Compute grid indices
+	for (int row = 0; row - 1 < width; row++) {
+		for (int col = 1; col < length - 1; col++) {
+			int tileNum = row * width + col;
+			int aboveTileNum = (row+1) * width + col;
+			int aboveRightTileNum = (row+1) * width + (col + 1);
+			int nextTileNum = row * width + (col + 1);
+
+			// Add them in counterclockwise order because we want to look at them from the back
+			gridMesh.Indices32.push_back(tileNum);
+			gridMesh.Indices32.push_back(aboveRightTileNum);
+			gridMesh.Indices32.push_back(aboveTileNum);
+
+			gridMesh.Indices32.push_back(tileNum);
+			gridMesh.Indices32.push_back(nextTileNum);
+			gridMesh.Indices32.push_back(aboveRightTileNum);
+
+			//// Left triangle in quad
+			//gridMesh.Indices32.push_back(tileNum);
+			//gridMesh.Indices32.push_back(aboveTileNum);
+			//gridMesh.Indices32.push_back(aboveRightTileNum);
+
+			//// Right triangle in quad
+			//gridMesh.Indices32.push_back(tileNum);
+			//gridMesh.Indices32.push_back(aboveRightTileNum);
+			//gridMesh.Indices32.push_back(nextTileNum);
+		}
+	}
+
+	gridMesh.Name = name;
+
+	int verticesByteSize = gridMesh.Vertices.size() * sizeof(Vertex);
+	int indicesByteSize = gridMesh.Indices32.size() * sizeof(uint32_t);
+
+
+	gridMesh.VertexByteStride = sizeof(Vertex);
+	gridMesh.VertexBufferByteSize = verticesByteSize;
+	gridMesh.IndexFormat = DXGI_FORMAT_R32_UINT;
+	gridMesh.IndexBufferByteSize = indicesByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = gridMesh.Indices32.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	gridMesh.DrawArgs[gridMesh.Name] = submesh;
+
+	return gridMesh;
 }
