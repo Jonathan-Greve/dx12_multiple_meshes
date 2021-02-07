@@ -385,9 +385,13 @@ void Engine::BuildGeometry()
 	unitBox3.cbPerObjectIndex = 2;
 	DirectX::XMStoreFloat4x4(&unitBox3.World, unitBox3World);
 
+	Mesh grid = MeshGenerator().GenerateGrid("grid", 30, 30);
+	grid.cbPerObjectIndex = 2;
+
 	m_resourceManager.AddMesh(unitBox1);
 	m_resourceManager.AddMesh(unitBox2);
-	m_resourceManager.AddMesh(unitBox3);
+	//m_resourceManager.AddMesh(unitBox3);
+	m_resourceManager.AddMesh(grid);
 
 	MeshConstants meshConstants;
 	meshConstants.World = unitBox1.World;
@@ -396,7 +400,10 @@ void Engine::BuildGeometry()
 	meshConstants.World = unitBox2.World;
 	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 1, meshConstants);
 
-	meshConstants.World = unitBox3.World;
+	//meshConstants.World = unitBox3.World;
+	//m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 2, meshConstants);
+
+	meshConstants.World = grid.World;
 	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 2, meshConstants);
 }
 
