@@ -17,7 +17,7 @@ public:
 	Mesh GetMesh(std::string meshName);
 	std::unordered_map<std::string, Mesh> GetAllMeshes ();
 
-	void AddConstantBuffer(std::string name, UINT elementByteSize, UINT numOfElements, ID3D12DescriptorHeap* cbvHeap);
+	void AddConstantBuffer(std::string name, UINT elementByteSize, UINT numOfElements, ID3D12DescriptorHeap* cbvHeap, UINT cbvHeapDescriptorSize);
 	void RemoveConstantBuffer(std::string name);
 
 	template <typename T>
@@ -29,6 +29,8 @@ private:
 	std::unordered_map<std::string, Mesh> m_meshes;
 	std::unordered_map<std::string, std::unique_ptr<UploadBuffer>> m_constantBuffers;
 
+	UINT m_currCBVHeapIndex = 0;
+
 	Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(
 		ID3D12Device* device,
 		ID3D12GraphicsCommandList* commandList,
@@ -39,11 +41,17 @@ private:
 
 struct MeshConstants
 {
-	DirectX::XMFLOAT4X4 WorldViewProj = DirectX::XMFLOAT4X4(
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f);
+	DirectX::XMFLOAT4X4 World = MathHelper().GetIdentity4x4();
+
+	// Explicit padding of 192 BYTES for a total of 256 as required by constant buffers.
+	DirectX::XMFLOAT4X4 Pad0 = DirectX::XMFLOAT4X4();
+	DirectX::XMFLOAT4X4 Pad1 = DirectX::XMFLOAT4X4();
+	DirectX::XMFLOAT4X4 Pad2 = DirectX::XMFLOAT4X4();
+};
+
+struct PassConstants
+{
+	DirectX::XMFLOAT4X4 ViewProj = MathHelper().GetIdentity4x4();
 
 	// Explicit padding of 192 BYTES for a total of 256 as required by constant buffers.
 	DirectX::XMFLOAT4X4 Pad0 = DirectX::XMFLOAT4X4();

@@ -93,9 +93,9 @@ void Engine::Update()
 	auto viewProj = XMMatrixMultiply(view, proj);
 
 
-	MeshConstants meshConstants;
-	DirectX::XMStoreFloat4x4(&meshConstants.WorldViewProj, XMMatrixTranspose(viewProj));
-	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 0, meshConstants);
+	PassConstants passConstants;
+	DirectX::XMStoreFloat4x4(&passConstants.ViewProj, XMMatrixTranspose(viewProj));
+	m_resourceManager.UpdateConstantBuffer<PassConstants>("PassConstants", 0, passConstants);
 
 	// Update geometry
 }
@@ -138,7 +138,7 @@ void Engine::Render()
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-	m_commandList->SetGraphicsRootDescriptorTable(0, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	m_commandList->SetGraphicsRootDescriptorTable(1, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	auto meshes = m_resourceManager.GetAllMeshes();
 	for (auto meshPair : meshes) {
@@ -151,8 +151,10 @@ void Engine::Render()
 		m_commandList->IASetIndexBuffer(&indexBufferView);
 		m_commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+		cbvHandle.Offset(mesh.cbPerObjectIndex+1, m_cbvDescriptorSize);
+		m_commandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
 
-		auto test = mesh.DrawArgs[mesh.Name];
 		m_commandList->DrawIndexedInstanced(
 			mesh.DrawArgs[mesh.Name].IndexCount,
 			1, 0, 0, 0);
@@ -274,9 +276,10 @@ void Engine::BuildDescriptorHeaps()
 		&dsvHeapDesc,
 		IID_PPV_ARGS(m_dsvHeap.GetAddressOf())));
 
-	// Create a heap for storing the constant buffer view
+	// Create a heap for storing the constant buffer views
+	// 1 per pass descriptor and 2 descriptors for, one for each box.
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 1;
+	cbvHeapDesc.NumDescriptors = 4;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -363,15 +366,38 @@ void Engine::BuildSwapChain()
 
 void Engine::BuildConstantBuffers()
 {
-	m_resourceManager.AddConstantBuffer("MeshConstants", sizeof(MeshConstants), 1, m_cbvHeap.Get());
+	m_resourceManager.AddConstantBuffer("PassConstants", sizeof(MeshConstants), 1, m_cbvHeap.Get(), m_cbvDescriptorSize);
+	m_resourceManager.AddConstantBuffer("MeshConstants", sizeof(MeshConstants), 3, m_cbvHeap.Get(), m_cbvDescriptorSize);
 }
 
 void Engine::BuildGeometry()
 {
-	Mesh unitBox = MeshGenerator().GenerateUnitBox("unitBox1");
-	m_resourceManager.AddMesh(unitBox);
+	Mesh unitBox1 = MeshGenerator().GenerateUnitBox("unitBox1");
+	unitBox1.cbPerObjectIndex = 0;
 
-	auto test = m_resourceManager.GetMesh(unitBox.Name);
+	auto unitBox2World = DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(2.0f, 2.0f, 2.0f));
+	Mesh unitBox2 = MeshGenerator().GenerateUnitBox("unitBox2");
+	unitBox2.cbPerObjectIndex = 1;
+	DirectX::XMStoreFloat4x4(&unitBox2.World, unitBox2World);
+
+	auto unitBox3World = DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(-2.0f, -2.0f, -2.0f));
+	Mesh unitBox3 = MeshGenerator().GenerateUnitBox("unitBox3");
+	unitBox3.cbPerObjectIndex = 2;
+	DirectX::XMStoreFloat4x4(&unitBox3.World, unitBox3World);
+
+	m_resourceManager.AddMesh(unitBox1);
+	m_resourceManager.AddMesh(unitBox2);
+	m_resourceManager.AddMesh(unitBox3);
+
+	MeshConstants meshConstants;
+	meshConstants.World = unitBox1.World;
+	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 0, meshConstants);
+
+	meshConstants.World = unitBox2.World;
+	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 1, meshConstants);
+
+	meshConstants.World = unitBox3.World;
+	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 2, meshConstants);
 }
 
 void Engine::BuildRootSignatures()
@@ -388,11 +414,13 @@ void Engine::BuildRootSignatures()
 		featureData.HighestVersion = D3D_ROOT_SIGNATURE_VERSION_1_0;
 	}
 
-	CD3DX12_DESCRIPTOR_RANGE1 ranges[1];
-	CD3DX12_ROOT_PARAMETER1 rootParameters[1];
+	CD3DX12_DESCRIPTOR_RANGE1 ranges[2];
+	CD3DX12_ROOT_PARAMETER1 rootParameters[2];
 
 	ranges[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
+	ranges[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1, 0, D3D12_DESCRIPTOR_RANGE_FLAG_DATA_STATIC);
 	rootParameters[0].InitAsDescriptorTable(1, &ranges[0], D3D12_SHADER_VISIBILITY_VERTEX);
+	rootParameters[1].InitAsDescriptorTable(1, &ranges[1], D3D12_SHADER_VISIBILITY_VERTEX);
 
 	// Allow input layout and deny uneccessary access to certain pipeline stages.
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags =

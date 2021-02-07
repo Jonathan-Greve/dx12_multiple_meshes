@@ -49,20 +49,27 @@ std::unordered_map<std::string, Mesh> ResourceManager::GetAllMeshes()
 	return m_meshes;
 }
 
-void ResourceManager::AddConstantBuffer(std::string name, UINT elementByteSize, UINT numOfElements, ID3D12DescriptorHeap* cbvHeap)
+void ResourceManager::AddConstantBuffer(std::string name, UINT elementByteSize, UINT numOfElements, ID3D12DescriptorHeap* cbvHeap, UINT cbvHeapDescriptorSize)
 {
 	m_constantBuffers[name] = std::make_unique<UploadBuffer>(m_device, numOfElements, elementByteSize, true);
 
 	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_constantBuffers[name]->Resource()->GetGPUVirtualAddress();
 	UINT objCBByteSize = m_constantBuffers[name]->GetElementPaddedByteSize();
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-	cbvDesc.BufferLocation = cbAddress;
-	cbvDesc.SizeInBytes = objCBByteSize * numOfElements;
+	for (int i = 0; i < numOfElements; i++) {
+		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+		cbvDesc.BufferLocation = cbAddress + i * objCBByteSize;
+		cbvDesc.SizeInBytes = objCBByteSize * numOfElements;
 
-	m_device->CreateConstantBufferView(
-		&cbvDesc,
-		cbvHeap->GetCPUDescriptorHandleForHeapStart());
+		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+		handle.Offset(m_currCBVHeapIndex, cbvHeapDescriptorSize);
+
+
+		m_device->CreateConstantBufferView(&cbvDesc, handle);
+
+		m_currCBVHeapIndex++;
+	}
+
 }
 
 void ResourceManager::RemoveConstantBuffer(std::string name)
@@ -138,3 +145,4 @@ Microsoft::WRL::ComPtr<ID3D12Resource> ResourceManager::CreateDefaultBuffer(
 }
 
 template void ResourceManager::UpdateConstantBuffer<MeshConstants>(std::string name, int elementIndex, const MeshConstants& pData);
+template void ResourceManager::UpdateConstantBuffer<PassConstants>(std::string name, int elementIndex, const PassConstants& pData);

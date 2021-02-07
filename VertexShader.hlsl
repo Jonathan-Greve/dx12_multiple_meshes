@@ -2,10 +2,18 @@
 // The padding can be removed for implicit padding
 cbuffer cbPerObject : register(b0)
 {
-	float4x4 gWorldViewProj;
+	float4x4 World;
 	float4x4 Pad0;
 	float4x4 Pad1;
 	float4x4 Pad2;
+};
+
+cbuffer cbPerRenderPass : register(b1)
+{
+	float4x4 ViewProj;
+	float4x4 Pad3;
+	float4x4 Pad4;
+	float4x4 Pad5;
 };
 
 struct VertexIn
@@ -28,7 +36,8 @@ VertexOut main(VertexIn vIn)
 	VertexOut vOut;
 
 	// Transform to homogeneous clip space.
-	vOut.PosH = mul(float4(vIn.PosL.x, vIn.PosL.y, vIn.PosL.z, 1.0f), gWorldViewProj);
+	vOut.PosH = mul(float4(vIn.PosL.x, vIn.PosL.y, vIn.PosL.z, 1.0f), World);
+	vOut.PosH = mul(vOut.PosH, ViewProj);
 	//vOut.PosH = float4(-vIn.PosL.x-0.5, -vIn.PosL.y-0.5, 0.5, 1.0);
 
 	vOut.Color = vIn.Color;

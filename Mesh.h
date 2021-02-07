@@ -9,7 +9,8 @@
 #include <d3d12.h>
 #include <unordered_map>
 #include <DirectXCollision.h>
-
+#include <DirectXMath.h>
+#include "MathHelper.h"
 
 // From Frank Luna's Dx12 Book.
 
@@ -34,10 +35,12 @@ struct Mesh
 public:
 	using uint32 = std::uint32_t;
 
-	// The name of the mesh
 	std::string Name;
 	std::vector<Vertex> Vertices;
 	std::vector<uint32> Indices32;
+
+	int cbPerObjectIndex = -1;
+	DirectX::XMFLOAT4X4 World = MathHelper().GetIdentity4x4();
 
 	// System memory copies.  Use Blobs because the vertex/index format can be generic.
 	// It is up to the client to cast appropriately.  
