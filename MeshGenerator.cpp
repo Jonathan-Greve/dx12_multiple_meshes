@@ -101,8 +101,8 @@ Mesh MeshGenerator::GenerateGrid(std::string name, int width, int length)
 	}
 
 	// Compute grid indices
-	for (int row = 0; row - 1 < width; row++) {
-		for (int col = 1; col < length - 1; col++) {
+	for (int row = 0; row < width - 1; row++) {
+		for (int col = 0; col < length - 1; col++) {
 			int tileNum = row * width + col;
 			int aboveTileNum = (row+1) * width + col;
 			int aboveRightTileNum = (row+1) * width + (col + 1);
