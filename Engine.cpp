@@ -385,7 +385,7 @@ void Engine::BuildGeometry()
 	unitBox3.cbPerObjectIndex = 2;
 	DirectX::XMStoreFloat4x4(&unitBox3.World, unitBox3World);
 
-	Mesh grid = MeshGenerator().GenerateGrid("grid", 50, 50);
+	Mesh grid = MeshGenerator().GenerateGrid("grid", 20, 25);
 	grid.cbPerObjectIndex = 2;
 
 	m_resourceManager.AddMesh(unitBox1);
