@@ -15,6 +15,14 @@ ResourceManager::ResourceManager(ID3D12GraphicsCommandList* commandList, ID3D12D
 
 void ResourceManager::AddMesh(Mesh mesh)
 {
+	if (!m_freeCBPerObjectIndex.empty()) {
+		mesh.cbPerObjectIndex = m_freeCBPerObjectIndex.back();
+		m_freeCBPerObjectIndex.pop_back();
+	}
+	else {
+		mesh.cbPerObjectIndex = m_newCBPerObjectIndex;
+		m_newCBPerObjectIndex++;
+	}
 	if (m_meshes.count(mesh.Name) == 0) {
 		mesh.VertexBufferGPU = CreateDefaultBuffer(m_device,
 			m_commandList, mesh.Vertices.data(), mesh.VertexBufferByteSize, mesh.VertexBufferUploader);
@@ -36,7 +44,8 @@ void ResourceManager::UpdateMesh(Mesh mesh)
 
 void ResourceManager::DeleteMesh(const Mesh& mesh)
 {
-	throw("DeleteMesh() function not implemented");
+	m_meshes.erase(mesh.Name);
+	m_freeCBPerObjectIndex.push_back(mesh.cbPerObjectIndex);
 }
 
 Mesh ResourceManager::GetMesh(std::string meshName)

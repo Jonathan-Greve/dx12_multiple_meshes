@@ -29,6 +29,8 @@ private:
 	std::unordered_map<std::string, Mesh> m_meshes;
 	std::unordered_map<std::string, std::unique_ptr<UploadBuffer>> m_constantBuffers;
 
+	std::vector<int> m_freeCBPerObjectIndex;
+	int m_newCBPerObjectIndex = 0;
 	UINT m_currCBVHeapIndex = 0;
 
 	Microsoft::WRL::ComPtr<ID3D12Resource> CreateDefaultBuffer(

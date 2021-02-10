@@ -286,7 +286,7 @@ void Engine::BuildDescriptorHeaps()
 	// Create a heap for storing the constant buffer views
 	// 1 per pass descriptor and 2 descriptors for, one for each box.
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 4;
+	cbvHeapDesc.NumDescriptors = 5;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -374,30 +374,26 @@ void Engine::BuildSwapChain()
 void Engine::BuildConstantBuffers()
 {
 	m_resourceManager.AddConstantBuffer("PassConstants", sizeof(MeshConstants), 1, m_cbvHeap.Get(), m_cbvDescriptorSize);
-	m_resourceManager.AddConstantBuffer("MeshConstants", sizeof(MeshConstants), 3, m_cbvHeap.Get(), m_cbvDescriptorSize);
+	m_resourceManager.AddConstantBuffer("MeshConstants", sizeof(MeshConstants), 4, m_cbvHeap.Get(), m_cbvDescriptorSize);
 }
 
 void Engine::BuildGeometry()
 {
 	Mesh unitBox1 = MeshGenerator().GenerateUnitBox("unitBox1");
-	unitBox1.cbPerObjectIndex = 0;
 
 	auto unitBox2World = DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(2.0f, 2.0f, 2.0f));
 	Mesh unitBox2 = MeshGenerator().GenerateUnitBox("unitBox2");
-	unitBox2.cbPerObjectIndex = 1;
 	DirectX::XMStoreFloat4x4(&unitBox2.World, unitBox2World);
 
-	auto unitBox3World = DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(-2.0f, -2.0f, -2.0f));
+	auto unitBox3World = DirectX::XMMatrixTranspose(DirectX::XMMatrixTranslation(-2.0f, 2.0f, -2.0f));
 	Mesh unitBox3 = MeshGenerator().GenerateUnitBox("unitBox3");
-	unitBox3.cbPerObjectIndex = 2;
 	DirectX::XMStoreFloat4x4(&unitBox3.World, unitBox3World);
 
 	Mesh grid = MeshGenerator().GenerateGrid("grid", 20, 25);
-	grid.cbPerObjectIndex = 2;
 
 	m_resourceManager.AddMesh(unitBox1);
 	m_resourceManager.AddMesh(unitBox2);
-	//m_resourceManager.AddMesh(unitBox3);
+	m_resourceManager.AddMesh(unitBox3);
 	m_resourceManager.AddMesh(grid);
 
 	MeshConstants meshConstants;
@@ -407,11 +403,11 @@ void Engine::BuildGeometry()
 	meshConstants.World = unitBox2.World;
 	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 1, meshConstants);
 
-	//meshConstants.World = unitBox3.World;
-	//m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 2, meshConstants);
+	meshConstants.World = unitBox3.World;
+	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 2, meshConstants);
 
 	meshConstants.World = grid.World;
-	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 2, meshConstants);
+	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 3, meshConstants);
 }
 
 void Engine::BuildRootSignatures()
