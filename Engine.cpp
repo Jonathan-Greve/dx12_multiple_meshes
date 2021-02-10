@@ -52,7 +52,7 @@ void Engine::Initialize()
 
 	m_camera.SetFrustum(0.25f * 3.14f, (float)m_windowManager.GetWidth() / m_windowManager.GetHeight(), 1.0f, 1000);
 	m_camera.LookAt(
-		DirectX::XMVectorSet(5.0f, -5.0f, -5.0f, 1.0f),
+		DirectX::XMVectorSet(-5.0f, 15.0f, -25.0f, 1.0f),
 		DirectX::XMVectorZero(),
 		DirectX::XMVectorSet(0.0f, 1.0f, 0.f, 0.0f));
 
@@ -89,7 +89,7 @@ void Engine::Update()
 	auto dt = "DeltaTime: " + std::to_string(deltaTime) + "\n";
 	auto ct = "CurrTime: " + std::to_string(m_currTime) + "\n";
 	//::OutputDebugStringA(dt.c_str());
-	::OutputDebugStringA(ct.c_str());
+	//::OutputDebugStringA(ct.c_str());
 
 	m_camera.UpdateViewMatrix();
 
