@@ -84,7 +84,12 @@ void Engine::Update()
 
 	auto ps = xs + " | " + ys + " | " + zs;
 
-	::OutputDebugStringA(ps.c_str());
+	//::OutputDebugStringA(ps.c_str());
+
+	auto dt = "DeltaTime: " + std::to_string(deltaTime) + "\n";
+	auto ct = "CurrTime: " + std::to_string(m_currTime) + "\n";
+	//::OutputDebugStringA(dt.c_str());
+	::OutputDebugStringA(ct.c_str());
 
 	m_camera.UpdateViewMatrix();
 
@@ -94,6 +99,8 @@ void Engine::Update()
 
 
 	PassConstants passConstants;
+	passConstants.DeltaTime = deltaTime;
+	passConstants.TotalTime = currTime;
 	DirectX::XMStoreFloat4x4(&passConstants.ViewProj, XMMatrixTranspose(viewProj));
 	m_resourceManager.UpdateConstantBuffer<PassConstants>("PassConstants", 0, passConstants);
 

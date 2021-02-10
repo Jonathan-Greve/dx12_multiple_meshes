@@ -52,11 +52,11 @@ struct MeshConstants
 struct PassConstants
 {
 	DirectX::XMFLOAT4X4 ViewProj = MathHelper().GetIdentity4x4();
+	double DeltaTime = 0;
+	double TotalTime = 0;
 
-	// Explicit padding of 192 BYTES for a total of 256 as required by constant buffers.
-	DirectX::XMFLOAT4X4 Pad0 = DirectX::XMFLOAT4X4();
-	DirectX::XMFLOAT4X4 Pad1 = DirectX::XMFLOAT4X4();
-	DirectX::XMFLOAT4X4 Pad2 = DirectX::XMFLOAT4X4();
+	// Explicit padding of alignment of 256 as required by constant buffers.
+	BYTE padding[176];
 };
 
 #endif
