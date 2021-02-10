@@ -86,8 +86,8 @@ Mesh MeshGenerator::GenerateGrid(std::string name, int width, int length)
 	Mesh gridMesh = Mesh();
 
 	// Compute grid vertices
-	for (int row = 1; row < width + 1; row++) {
-		for (int col = 1; col < length + 1; col++) {
+	for (int row = 0; row <= width; row++) {
+		for (int col = 0; col <= length; col++) {
 			auto color = col * row % 2 == 0 ? XMFLOAT4(Colors::Black) : XMFLOAT4(Colors::White);
 			Vertex vertex = Vertex(
 				XMFLOAT3(-width / 2 + row, -1.0f, -length / 2 + col),
@@ -101,12 +101,12 @@ Mesh MeshGenerator::GenerateGrid(std::string name, int width, int length)
 	}
 
 	// Compute grid indices
-	for (int row = 0; row < width - 1; row++) {
-		for (int col = 0; col < length - 1; col++) {
-			int tileNum = row * width + col;
-			int aboveTileNum = (row+1) * width + col;
-			int aboveRightTileNum = (row+1) * width + (col + 1);
-			int nextTileNum = row * width + (col + 1);
+	for (int row = 0; row < width; row++) {
+		for (int col = 0; col < length; col++) {
+			int tileNum = row * (length + 1) + col;
+			int aboveTileNum = tileNum + (length + 1);
+			int aboveRightTileNum = aboveTileNum + 1;
+			int nextTileNum = tileNum + 1;
 
 			// Add them in counterclockwise order because we want to look at them from the back
 			gridMesh.Indices32.push_back(tileNum);
