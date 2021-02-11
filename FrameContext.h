@@ -1,4 +1,6 @@
-#pragma once
+#ifndef FRAMECONTEXT_H_ 
+#define FRAMECONTEXT_H_
+
 #include "UploadBuffer.h"
 #include <unordered_map>
 
@@ -15,3 +17,5 @@ public:
 	// Each frame keeps its own fence value to check if it can execute or needs to wait
 	UINT64 Fence = 0;
 };
+
+#endif
