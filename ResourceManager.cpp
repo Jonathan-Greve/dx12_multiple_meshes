@@ -5,12 +5,14 @@ using namespace Microsoft::WRL;
 
 ResourceManager::ResourceManager()
 {
+	InitializeFrameContexts();
 }
 
 ResourceManager::ResourceManager(ID3D12GraphicsCommandList* commandList, ID3D12Device* device) :
 	m_commandList(commandList),
 	m_device(device)
 {
+	InitializeFrameContexts();
 }
 
 void ResourceManager::AddMesh(Mesh mesh)
@@ -60,36 +62,40 @@ std::unordered_map<std::string, Mesh> ResourceManager::GetAllMeshes()
 
 void ResourceManager::AddConstantBuffer(std::string name, UINT elementByteSize, UINT numOfElements, ID3D12DescriptorHeap* cbvHeap, UINT cbvHeapDescriptorSize)
 {
-	m_constantBuffers[name] = std::make_unique<UploadBuffer>(m_device, numOfElements, elementByteSize, true);
+	for (int i = 0; i < numFrameContexts; i++) {
+		m_frameContexts[i].m_constantBuffers[name] = std::make_unique<UploadBuffer>(m_device, numOfElements, elementByteSize, true);
 
-	D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_constantBuffers[name]->Resource()->GetGPUVirtualAddress();
-	UINT objCBByteSize = m_constantBuffers[name]->GetElementPaddedByteSize();
+		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = m_frameContexts[i].m_constantBuffers[name]->Resource()->GetGPUVirtualAddress();
+		UINT objCBByteSize = m_frameContexts[i].m_constantBuffers[name]->GetElementPaddedByteSize();
 
-	for (int i = 0; i < numOfElements; i++) {
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = cbAddress + i * objCBByteSize;
-		cbvDesc.SizeInBytes = objCBByteSize * numOfElements;
+		for (int j = 0; j < numOfElements; j++) {
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+			cbvDesc.BufferLocation = cbAddress + j * objCBByteSize;
+			cbvDesc.SizeInBytes = objCBByteSize;
 
-		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(m_currCBVHeapIndex, cbvHeapDescriptorSize);
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(cbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(m_currCBVHeapIndex, cbvHeapDescriptorSize);
 
 
-		m_device->CreateConstantBufferView(&cbvDesc, handle);
+			m_device->CreateConstantBufferView(&cbvDesc, handle);
 
-		m_currCBVHeapIndex++;
+			m_currCBVHeapIndex++;
+		}
 	}
 
 }
 
 void ResourceManager::RemoveConstantBuffer(std::string name)
 {
-	m_constantBuffers.erase(name);
+	for (int i = 0; i < numFrameContexts; i++) {
+		m_frameContexts[i].m_constantBuffers.erase(name);
+	}
 }
 
 template <typename T>
 void ResourceManager::UpdateConstantBuffer(std::string name, int elementIndex, const T& pData)
 {
-	m_constantBuffers[name]->CopyData(elementIndex, pData);
+	m_frameContexts[m_currFrameContextIndex].m_constantBuffers[name]->CopyData(elementIndex, pData);
 }
 
 Microsoft::WRL::ComPtr<ID3D12Resource> ResourceManager::CreateDefaultBuffer(
@@ -151,6 +157,13 @@ Microsoft::WRL::ComPtr<ID3D12Resource> ResourceManager::CreateDefaultBuffer(
 
 	return defaultBuffer;
 
+}
+
+void ResourceManager::InitializeFrameContexts()
+{
+	for (int i = 0; i < numFrameContexts; i++) {
+		m_frameContexts[i] = FrameContext();
+	}
 }
 
 template void ResourceManager::UpdateConstantBuffer<MeshConstants>(std::string name, int elementIndex, const MeshConstants& pData);

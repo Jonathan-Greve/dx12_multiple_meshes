@@ -159,7 +159,7 @@ void Engine::Render()
 		m_commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(mesh.cbPerObjectIndex+1, m_cbvDescriptorSize);
+		cbvHandle.Offset(mesh.cbPerObjectIndex+3, m_cbvDescriptorSize);
 		m_commandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
 
 		m_commandList->DrawIndexedInstanced(
@@ -286,7 +286,7 @@ void Engine::BuildDescriptorHeaps()
 	// Create a heap for storing the constant buffer views
 	// 1 per pass descriptor and 2 descriptors for, one for each box.
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = 5;
+	cbvHeapDesc.NumDescriptors = (1+4) * m_resourceManager.numFrameContexts;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;

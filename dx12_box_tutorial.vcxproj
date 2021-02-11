@@ -151,6 +151,7 @@
     <ClInclude Include="Engine.h" />
     <ClInclude Include="EventManager.h" />
     <ClInclude Include="FPSCamera.h" />
+    <ClInclude Include="FrameContext.h" />
     <ClInclude Include="ICamera.h" />
     <ClInclude Include="InputManager.h" />
     <ClInclude Include="Main.h" />
@@ -172,6 +173,7 @@
     <ClCompile Include="Engine.cpp" />
     <ClCompile Include="EventManager.cpp" />
     <ClCompile Include="FPSCamera.cpp" />
+    <ClCompile Include="FrameContext.cpp" />
     <ClCompile Include="InputManager.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MathHelper.cpp" />

@@ -4,6 +4,7 @@
 #include "Mesh.h"
 #include "UploadBuffer.h"
 #include <DirectXMath.h>
+#include "FrameContext.h"
 
 class ResourceManager
 {
@@ -15,7 +16,7 @@ public:
 	void UpdateMesh(Mesh mesh);
 	void DeleteMesh(const Mesh& mesh);
 	Mesh GetMesh(std::string meshName);
-	std::unordered_map<std::string, Mesh> GetAllMeshes ();
+	std::unordered_map<std::string, Mesh> GetAllMeshes();
 
 	void AddConstantBuffer(std::string name, UINT elementByteSize, UINT numOfElements, ID3D12DescriptorHeap* cbvHeap, UINT cbvHeapDescriptorSize);
 	void RemoveConstantBuffer(std::string name);
@@ -23,11 +24,15 @@ public:
 	template <typename T>
 	void UpdateConstantBuffer(std::string name, int elementIndex, const T& pData);
 
+	static const int numFrameContexts = 3;
 private:
+
 	ID3D12GraphicsCommandList* m_commandList = nullptr;
 	ID3D12Device* m_device = nullptr;
 	std::unordered_map<std::string, Mesh> m_meshes;
-	std::unordered_map<std::string, std::unique_ptr<UploadBuffer>> m_constantBuffers;
+
+	int m_currFrameContextIndex = 0;
+	FrameContext m_frameContexts[numFrameContexts];
 
 	std::vector<int> m_freeCBPerObjectIndex;
 	int m_newCBPerObjectIndex = 0;
@@ -39,7 +44,10 @@ private:
 		const void* pData,
 		UINT64 pDataByteSize,
 		Microsoft::WRL::ComPtr<ID3D12Resource>& uploadBuffer);
+
+	void InitializeFrameContexts();
 };
+
 
 struct MeshConstants
 {
