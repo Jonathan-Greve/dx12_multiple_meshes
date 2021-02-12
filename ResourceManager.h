@@ -25,6 +25,9 @@ public:
 	void UpdateConstantBuffer(std::string name, int elementIndex, const T& pData);
 
 	static const int numFrameContexts = 3;
+	FrameContext* GetCurrentFrameContext();
+	int GetCurrentFrameIndex();
+	void CycleFrameContext();
 private:
 
 	ID3D12GraphicsCommandList* m_commandList = nullptr;

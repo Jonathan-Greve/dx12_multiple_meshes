@@ -66,6 +66,24 @@ void Engine::Initialize()
 
 void Engine::Update()
 {
+	// Get the frameContext for updating
+	auto currFrameContext = m_resourceManager.GetCurrentFrameContext();
+
+	// Get fencevalue
+	auto currFenceValue = currFrameContext->Fence;
+
+	// If the current value of the most recent completed fence is less than the current frames fence value
+	// then wait. For example the first Signal set the completed value to 1. Then if the GPU is slow we might
+	// cycle all the way through until we reach the same FrameContext but the Signal has not yet been executed
+	// on the GPU so the CompletedValue is still -1 (the default value). So we must wait for it to complete.
+	if (currFrameContext->Fence > 0 && m_fence->GetCompletedValue() < currFrameContext->Fence) {
+		HANDLE eventHandle = CreateEventEx(nullptr, FALSE, FALSE, EVENT_ALL_ACCESS);
+
+		ThrowIfFailed(m_fence->SetEventOnCompletion(m_fenceValue, eventHandle));
+		WaitForSingleObject(eventHandle, INFINITE);
+		CloseHandle(eventHandle);
+	}
+
 	// Update time
 	m_cpuTimer.Stop();
 	double currTime = m_cpuTimer.GetTime();
@@ -102,16 +120,20 @@ void Engine::Update()
 	passConstants.DeltaTime = deltaTime;
 	passConstants.TotalTime = currTime;
 	DirectX::XMStoreFloat4x4(&passConstants.ViewProj, XMMatrixTranspose(viewProj));
-	m_resourceManager.UpdateConstantBuffer<PassConstants>("PassConstants", 0, passConstants);
+
+	for (int i = 0; i < m_resourceManager.numFrameContexts; i++) {
+		m_resourceManager.UpdateConstantBuffer<PassConstants>("PassConstants", i, passConstants);
+	}
 
 	// Update geometry
 }
 
 void Engine::Render()
 {
-	ThrowIfFailed(m_commandAllocator->Reset());
+	auto commandAllocator = m_resourceManager.GetCurrentFrameContext()->m_cmdListAlloc;
+	ThrowIfFailed(commandAllocator->Reset());
 
-	ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), m_PSO.Get()));
+	ThrowIfFailed(m_commandList->Reset(commandAllocator.Get(), m_PSO.Get()));
 
 	m_commandList->RSSetViewports(1, &m_viewport);
 	m_commandList->RSSetScissorRects(1, &m_scissorRect);
@@ -145,6 +167,10 @@ void Engine::Render()
 	m_commandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+
+	auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+	int passCBIndex = m_resourceManager.GetCurrentFrameIndex();
+	cbvHandle.Offset(passCBIndex, m_cbvDescriptorSize);
 	m_commandList->SetGraphicsRootDescriptorTable(1, m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	auto meshes = m_resourceManager.GetAllMeshes();
@@ -158,8 +184,8 @@ void Engine::Render()
 		m_commandList->IASetIndexBuffer(&indexBufferView);
 		m_commandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(mesh.cbPerObjectIndex+3, m_cbvDescriptorSize);
+		cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(m_cbvHeap->GetGPUDescriptorHandleForHeapStart());
+		cbvHandle.Offset(mesh.cbPerObjectIndex + m_resourceManager.numFrameContexts, m_cbvDescriptorSize);
 		m_commandList->SetGraphicsRootDescriptorTable(0, cbvHandle);
 
 		m_commandList->DrawIndexedInstanced(
@@ -182,8 +208,11 @@ void Engine::Render()
 
 	// swap the back and front buffers
 	ThrowIfFailed(m_swapChain->Present(0, 0));
-	WaitForPreviousFrame();
+
+	m_resourceManager.GetCurrentFrameContext()->Fence = ++m_fenceValue;
+	m_commandQueue->Signal(m_fence.Get(), m_fenceValue);
 	m_frameIndex = (m_frameIndex + 1) % m_frameCount;
+	m_resourceManager.CycleFrameContext();
 }
 
 void Engine::Destroy()
@@ -286,7 +315,7 @@ void Engine::BuildDescriptorHeaps()
 	// Create a heap for storing the constant buffer views
 	// 1 per pass descriptor and 2 descriptors for, one for each box.
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = (1+4) * m_resourceManager.numFrameContexts;
+	cbvHeapDesc.NumDescriptors = (1 + 4) * m_resourceManager.numFrameContexts;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;

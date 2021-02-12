@@ -5,13 +5,12 @@ using namespace Microsoft::WRL;
 
 ResourceManager::ResourceManager()
 {
-	InitializeFrameContexts();
 }
 
 ResourceManager::ResourceManager(ID3D12GraphicsCommandList* commandList, ID3D12Device* device) :
-	m_commandList(commandList),
-	m_device(device)
+	m_commandList(commandList)
 {
+	m_device = device;
 	InitializeFrameContexts();
 }
 
@@ -92,6 +91,21 @@ void ResourceManager::RemoveConstantBuffer(std::string name)
 	}
 }
 
+FrameContext* ResourceManager::GetCurrentFrameContext()
+{
+	return &m_frameContexts[m_currFrameContextIndex];
+}
+
+int ResourceManager::GetCurrentFrameIndex()
+{
+	return m_currFrameContextIndex;
+}
+
+void ResourceManager::CycleFrameContext()
+{
+	m_currFrameContextIndex = (m_currFrameContextIndex + 1) % numFrameContexts;
+}
+
 template <typename T>
 void ResourceManager::UpdateConstantBuffer(std::string name, int elementIndex, const T& pData)
 {
@@ -163,6 +177,10 @@ void ResourceManager::InitializeFrameContexts()
 {
 	for (int i = 0; i < numFrameContexts; i++) {
 		m_frameContexts[i] = FrameContext();
+		ThrowIfFailed(m_device->CreateCommandAllocator(
+			D3D12_COMMAND_LIST_TYPE_DIRECT,
+			IID_PPV_ARGS(m_frameContexts[i].m_cmdListAlloc.GetAddressOf())));
+
 	}
 }
 
