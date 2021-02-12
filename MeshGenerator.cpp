@@ -2,6 +2,7 @@
 #include "VertexDefs.h"
 #include <DirectXColors.h>
 #include <array>
+#include <GeometricPrimitive.h>
 
 using namespace DirectX;
 
@@ -148,4 +149,45 @@ Mesh MeshGenerator::GenerateGrid(std::string name, int width, int length)
 	gridMesh.DrawArgs[gridMesh.Name] = submesh;
 
 	return gridMesh;
+}
+
+Mesh MeshGenerator::GenerateSphere(std::string name, float radius)
+{
+	Mesh sphereMesh = Mesh();
+	std::vector<uint16_t> indices;
+	auto vertices = std::vector<GeometricPrimitive::VertexType>();
+	GeometricPrimitive::CreateSphere(vertices, indices, 1.0f);
+
+	bool colorTest = false;
+	for (auto v : vertices) {
+		auto color = colorTest ? Colors::White : Colors::Black;
+		sphereMesh.Vertices.push_back(
+			Vertex(v.position, XMFLOAT4(color), XMFLOAT3(), XMFLOAT3(), XMFLOAT2())
+		);
+		colorTest = !colorTest;
+	}
+
+	for (auto indice16 : indices) {
+		sphereMesh.Indices32.push_back(indice16);
+	}
+
+	sphereMesh.Name = name;
+
+	int verticesByteSize = sphereMesh.Vertices.size() * sizeof(Vertex);
+	int indicesByteSize = sphereMesh.Indices32.size() * sizeof(uint32_t);
+
+
+	sphereMesh.VertexByteStride = sizeof(Vertex);
+	sphereMesh.VertexBufferByteSize = verticesByteSize;
+	sphereMesh.IndexFormat = DXGI_FORMAT_R32_UINT;
+	sphereMesh.IndexBufferByteSize = indicesByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = sphereMesh.Indices32.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	sphereMesh.DrawArgs[sphereMesh.Name] = submesh;
+
+	return sphereMesh;
 }

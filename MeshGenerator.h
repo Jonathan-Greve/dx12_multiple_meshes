@@ -9,6 +9,7 @@ public:
 	static Mesh GenerateUnitCircle(std::string name);
 	static Mesh GenerateUnitBox(std::string name);
 	static Mesh GenerateGrid(std::string name, int width, int length);
+	static Mesh GenerateSphere(std::string name, float radius = 1.0f);
 
 private:
 };
