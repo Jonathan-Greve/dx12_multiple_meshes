@@ -39,12 +39,12 @@ VertexOut main(VertexIn vIn)
 
 	// Transform to homogeneous clip space.
 	vOut.PosH = mul(float4(vIn.PosL.x, vIn.PosL.y, vIn.PosL.z, 1.0f), World);
-	vOut.PosH.y += sin(TotalTime) * 3;
+	//vOut.PosH.y += sin(TotalTime) * 3;
 	vOut.PosH = mul(vOut.PosH, ViewProj);
 	//vOut.PosH = float4(-vIn.PosL.x-0.5, -vIn.PosL.y-0.5, 0.5, 1.0);
 
 	vOut.Color = vIn.Color;
-	vOut.Color.r *= sin(TotalTime*4) * 0.5 + 0.5;
+	//vOut.Color.r *= sin(TotalTime*4) * 0.5 + 0.5;
 
 	return vOut;
 }
