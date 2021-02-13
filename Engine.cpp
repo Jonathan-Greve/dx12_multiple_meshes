@@ -317,7 +317,7 @@ void Engine::BuildDescriptorHeaps()
 	// Create a heap for storing the constant buffer views
 	// 1 per pass descriptor and 2 descriptors for, one for each box.
 	D3D12_DESCRIPTOR_HEAP_DESC cbvHeapDesc;
-	cbvHeapDesc.NumDescriptors = (1 + 5) * m_resourceManager.numFrameContexts;
+	cbvHeapDesc.NumDescriptors = (1 + 6) * m_resourceManager.numFrameContexts;
 	cbvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	cbvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	cbvHeapDesc.NodeMask = 0;
@@ -405,7 +405,7 @@ void Engine::BuildSwapChain()
 void Engine::BuildConstantBuffers()
 {
 	m_resourceManager.AddConstantBuffer("PassConstants", sizeof(MeshConstants), 1, m_cbvHeap.Get(), m_cbvDescriptorSize);
-	m_resourceManager.AddConstantBuffer("MeshConstants", sizeof(MeshConstants), 5, m_cbvHeap.Get(), m_cbvDescriptorSize);
+	m_resourceManager.AddConstantBuffer("MeshConstants", sizeof(MeshConstants), 6, m_cbvHeap.Get(), m_cbvDescriptorSize);
 }
 
 void Engine::BuildGeometry()
@@ -427,10 +427,16 @@ void Engine::BuildGeometry()
 	Mesh sphere1 = MeshGenerator().GenerateSphere("sphere1");
 	DirectX::XMStoreFloat4x4(&sphere1.World, DirectX::XMMatrixTranspose(sphere1World));
 
+	auto teapot1World = DirectX::XMMatrixScaling(3.0f, 3.0f, 3.0f);
+	teapot1World *= DirectX::XMMatrixTranslation(6.0f, 0.0f, 0.0f);
+	Mesh teapot1 = MeshGenerator().GenerateTeapot("teapot1");
+	DirectX::XMStoreFloat4x4(&teapot1.World, DirectX::XMMatrixTranspose(teapot1World));
+
 	m_resourceManager.AddMesh(unitBox1);
 	m_resourceManager.AddMesh(unitBox2);
 	m_resourceManager.AddMesh(unitBox3);
 	m_resourceManager.AddMesh(sphere1);
+	m_resourceManager.AddMesh(teapot1);
 	m_resourceManager.AddMesh(grid);
 
 	MeshConstants meshConstants;
@@ -446,8 +452,11 @@ void Engine::BuildGeometry()
 	meshConstants.World = sphere1.World;
 	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 3, meshConstants);
 
-	meshConstants.World = grid.World;
+	meshConstants.World = teapot1.World;
 	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 4, meshConstants);
+
+	meshConstants.World = grid.World;
+	m_resourceManager.UpdateConstantBuffer<MeshConstants>("MeshConstants", 5, meshConstants);
 }
 
 void Engine::BuildRootSignatures()
