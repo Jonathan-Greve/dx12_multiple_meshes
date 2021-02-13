@@ -156,7 +156,7 @@ Mesh MeshGenerator::GenerateSphere(std::string name, float radius)
 	Mesh sphereMesh = Mesh();
 	std::vector<uint16_t> indices;
 	auto vertices = std::vector<GeometricPrimitive::VertexType>();
-	GeometricPrimitive::CreateSphere(vertices, indices, radius);
+	GeometricPrimitive::CreateSphere(vertices, indices, radius, 16, false);
 
 	for (auto v : vertices) {
 		auto color = XMFLOAT4(v.position.x, v.position.y, v.position.z, 1.0f);
@@ -195,7 +195,7 @@ Mesh MeshGenerator::GenerateTeapot(std::string name)
 	Mesh teapotMesh = Mesh();
 	std::vector<uint16_t> indices;
 	auto vertices = std::vector<GeometricPrimitive::VertexType>();
-	GeometricPrimitive::CreateTeapot(vertices, indices);
+	GeometricPrimitive::CreateTeapot(vertices, indices, 1.0f, 16, false);
 
 	for (auto v : vertices) {
 		auto color = XMFLOAT4(v.position.x, v.position.y, v.position.z, 1.0f);
