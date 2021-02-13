@@ -156,15 +156,13 @@ Mesh MeshGenerator::GenerateSphere(std::string name, float radius)
 	Mesh sphereMesh = Mesh();
 	std::vector<uint16_t> indices;
 	auto vertices = std::vector<GeometricPrimitive::VertexType>();
-	GeometricPrimitive::CreateSphere(vertices, indices, 1.0f);
+	GeometricPrimitive::CreateSphere(vertices, indices, radius);
 
-	bool colorTest = false;
 	for (auto v : vertices) {
-		auto color = colorTest ? Colors::White : Colors::Black;
+		auto color = XMFLOAT4(v.position.x, v.position.y, v.position.z, 1.0f);
 		sphereMesh.Vertices.push_back(
-			Vertex(v.position, XMFLOAT4(color), XMFLOAT3(), XMFLOAT3(), XMFLOAT2())
+			Vertex(v.position, color, XMFLOAT3(), XMFLOAT3(), XMFLOAT2())
 		);
-		colorTest = !colorTest;
 	}
 
 	for (auto indice16 : indices) {
@@ -190,4 +188,43 @@ Mesh MeshGenerator::GenerateSphere(std::string name, float radius)
 	sphereMesh.DrawArgs[sphereMesh.Name] = submesh;
 
 	return sphereMesh;
+}
+
+Mesh MeshGenerator::GenerateTeapot(std::string name)
+{
+	Mesh teapotMesh = Mesh();
+	std::vector<uint16_t> indices;
+	auto vertices = std::vector<GeometricPrimitive::VertexType>();
+	GeometricPrimitive::CreateTeapot(vertices, indices);
+
+	for (auto v : vertices) {
+		auto color = XMFLOAT4(v.position.x, v.position.y, v.position.z, 1.0f);
+		teapotMesh.Vertices.push_back(
+			Vertex(v.position, color, XMFLOAT3(), XMFLOAT3(), XMFLOAT2())
+		);
+	}
+
+	for (auto indice16 : indices) {
+		teapotMesh.Indices32.push_back(indice16);
+	}
+
+	teapotMesh.Name = name;
+
+	int verticesByteSize = teapotMesh.Vertices.size() * sizeof(Vertex);
+	int indicesByteSize = teapotMesh.Indices32.size() * sizeof(uint32_t);
+
+
+	teapotMesh.VertexByteStride = sizeof(Vertex);
+	teapotMesh.VertexBufferByteSize = verticesByteSize;
+	teapotMesh.IndexFormat = DXGI_FORMAT_R32_UINT;
+	teapotMesh.IndexBufferByteSize = indicesByteSize;
+
+	SubmeshGeometry submesh;
+	submesh.IndexCount = teapotMesh.Indices32.size();
+	submesh.StartIndexLocation = 0;
+	submesh.BaseVertexLocation = 0;
+
+	teapotMesh.DrawArgs[teapotMesh.Name] = submesh;
+
+	return teapotMesh;
 }
